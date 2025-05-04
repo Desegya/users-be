@@ -4,6 +4,7 @@ import { validationResult } from "express-validator";
 import Role, { IRole } from "../models/Role";
 import { AuthRequest } from "../middleware/auth";
 import { logAction } from "../utils/logAction";
+import { ALL_PERMISSIONS, Permission } from "../utils/permissions";
 
 /**
  * GET /api/roles
@@ -53,15 +54,24 @@ export const createRole = async (
     const { name, description, permissions } = req.body as {
       name: string;
       description?: string;
-      permissions: string[];
+      permissions: Partial<Record<Permission, boolean>>;
     };
+
+    const permsMap: Record<Permission, boolean> = {} as any;
+    ALL_PERMISSIONS.forEach((p) => {
+      permsMap[p] = Boolean(permissions[p]);
+    });
 
     if (await Role.exists({ name })) {
       res.status(400).json({ error: "Role name already in use" });
       return;
     }
 
-    const role = await Role.create({ name, description, permissions });
+    const role = await Role.create({
+      name,
+      description,
+      permissions: permsMap,
+    });
 
     // log action
     await logAction(
