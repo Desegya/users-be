@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document } from "mongoose";
 
 export interface IRole extends Document {
   name: string;
@@ -8,11 +8,11 @@ export interface IRole extends Document {
 
 const RoleSchema = new Schema<IRole>(
   {
-    name:        { type: String, required: true, unique: true },
+    name: { type: String, required: true, unique: true },
     description: { type: String },
     permissions: { type: [String], default: [] },
   },
   { timestamps: true }
 );
 
-export default model<IRole>('Role', RoleSchema);
+export default model<IRole>("Role", RoleSchema);

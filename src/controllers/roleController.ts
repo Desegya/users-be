@@ -1,58 +1,134 @@
 // src/controllers/roleController.ts
-import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
-import Role, { IRole } from '../models/Role';
+import { Request, Response } from "express";
+import { validationResult } from "express-validator";
+import Role, { IRole } from "../models/Role";
+import { AuthRequest } from "../middleware/auth";
+import { logAction } from "../utils/logAction";
 
-// GET /api/roles
+/**
+ * GET /api/roles
+ */
 export const listRoles = async (req: Request, res: Response): Promise<void> => {
-  const roles = await Role.find().lean();
-  res.json(roles);
-};
-
-// GET /api/roles/:id
-export const getRole = async (req: Request, res: Response): Promise<void> => {
-  const role = await Role.findById(req.params.id).lean();
-  if (!role) {
-    res.status(404).json({ error: 'Role not found' });
-    return;
+  try {
+    const roles = await Role.find().lean();
+    res.json(roles);
+  } catch (err) {
+    console.error("listRoles error:", err);
+    res.status(500).json({ error: "Server error listing roles" });
   }
-  res.json(role);
 };
 
-// POST /api/roles
-export const createRole = async (req: Request, res: Response): Promise<void> => {
+/**
+ * GET /api/roles/:id
+ */
+export const getRole = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const role = await Role.findById(req.params.id).lean();
+    if (!role) {
+      res.status(404).json({ error: "Role not found" });
+      return;
+    }
+    res.json(role);
+  } catch (err) {
+    console.error("getRole error:", err);
+    res.status(500).json({ error: "Server error fetching role" });
+  }
+};
+
+/**
+ * POST /api/roles
+ */
+export const createRole = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  // validation
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     res.status(400).json({ errors: errors.array() });
     return;
   }
-  const { name, description, permissions } = req.body;
-  const exists = await Role.exists({ name });
-  if (exists) {
-    res.status(400).json({ error: 'Role name already in use' });
-    return;
+
+  try {
+    const { name, description, permissions } = req.body as {
+      name: string;
+      description?: string;
+      permissions: string[];
+    };
+
+    if (await Role.exists({ name })) {
+      res.status(400).json({ error: "Role name already in use" });
+      return;
+    }
+
+    const role = await Role.create({ name, description, permissions });
+
+    // log action
+    await logAction(
+      req.user!._id,
+      "Created role",
+      `Role ${role._id} (${role.name}) created`
+    );
+
+    res.status(201).json(role);
+  } catch (err) {
+    console.error("createRole error:", err);
+    res.status(500).json({ error: "Server error creating role" });
   }
-  const role = await Role.create({ name, description, permissions });
-  res.status(201).json(role);
 };
 
-// PUT /api/roles/:id
-export const updateRole = async (req: Request, res: Response): Promise<void> => {
-  const updates = req.body as Partial<IRole>;
-  const role = await Role.findByIdAndUpdate(req.params.id, updates, { new: true }).lean();
-  if (!role) {
-    res.status(404).json({ error: 'Role not found' });
-    return;
+/**
+ * PUT /api/roles/:id
+ */
+export const updateRole = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const updates = req.body as Partial<IRole>;
+    const role = await Role.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+    }).lean();
+
+    if (!role) {
+      res.status(404).json({ error: "Role not found" });
+      return;
+    }
+
+    // log action
+    await logAction(req.user!._id, "Updated role", `Role ${role._id} updated`);
+
+    res.json(role);
+  } catch (err) {
+    console.error("updateRole error:", err);
+    res.status(500).json({ error: "Server error updating role" });
   }
-  res.json(role);
 };
 
-// DELETE /api/roles/:id
-export const deleteRole = async (req: Request, res: Response): Promise<void> => {
-  const role = await Role.findByIdAndDelete(req.params.id).lean();
-  if (!role) {
-    res.status(404).json({ error: 'Role not found' });
-    return;
+/**
+ * DELETE /api/roles/:id
+ */
+export const deleteRole = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const role = await Role.findByIdAndDelete(req.params.id).lean();
+    if (!role) {
+      res.status(404).json({ error: "Role not found" });
+      return;
+    }
+
+    // log action
+    await logAction(
+      req.user!._id,
+      "Deleted role",
+      `Role ${req.params.id} (${role.name}) deleted`
+    );
+
+    res.json({ message: "Role deleted successfully" });
+  } catch (err) {
+    console.error("deleteRole error:", err);
+    res.status(500).json({ error: "Server error deleting role" });
   }
-  res.json({ message: 'Role deleted successfully' });
 };

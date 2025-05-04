@@ -1,15 +1,16 @@
 // src/routes/roles.ts
-import { Router } from 'express';
-import { body } from 'express-validator';
+import { Router } from "express";
+import { body } from "express-validator";
 import {
   listRoles,
   getRole,
   createRole,
   updateRole,
   deleteRole,
-} from '../controllers/roleController';
-import { protect } from '../middleware/auth';
-import { validate } from '../middleware/validate';
+} from "../controllers/roleController";
+import { protect } from "../middleware/auth";
+import { validate } from "../middleware/validate";
+import { authorize } from "../middleware/authorize";
 
 const router = Router();
 
@@ -17,19 +18,20 @@ const router = Router();
 router.use(protect);
 
 // GET /api/roles
-router.get('/', listRoles);
+router.get("/", listRoles);
 
 // GET /api/roles/:id
-router.get('/:id', getRole);
+router.get("/:id", getRole);
 
 // POST /api/roles
 router.post(
-  '/',
+  "/",
+  authorize('admin', 'manager'),
   [
-    body('name').notEmpty().withMessage('Name is required'),
-    body('permissions')
+    body("name").notEmpty().withMessage("Name is required"),
+    body("permissions")
       .isArray()
-      .withMessage('Permissions must be an array of strings'),
+      .withMessage("Permissions must be an array of strings"),
   ],
   validate,
   createRole
@@ -37,16 +39,17 @@ router.post(
 
 // PUT /api/roles/:id
 router.put(
-  '/:id',
+  "/:id",
+  authorize('admin', 'manager'),
   [
-    body('name').optional().notEmpty(),
-    body('permissions').optional().isArray(),
+    body("name").optional().notEmpty(),
+    body("permissions").optional().isArray(),
   ],
   validate,
   updateRole
 );
 
 // DELETE /api/roles/:id
-router.delete('/:id', deleteRole);
+router.delete("/:id", authorize('admin'), deleteRole);
 
 export default router;
