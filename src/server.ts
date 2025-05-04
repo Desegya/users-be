@@ -15,10 +15,10 @@ app.use(express.json());
 connectDB();
 
 // Mount routes
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/roles", roleRoutes);
-app.use("/api/logs", logRoutes);
+app.use("/auth", authRoutes);
+app.use("/users", userRoutes);
+app.use("/roles", roleRoutes);
+app.use("/logs", logRoutes);
 
 app.get("/", (_req: Request, res: Response): void => {
   res.send("API is running");
