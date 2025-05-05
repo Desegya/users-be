@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth";
 import userRoutes from "./routes/users";
 import roleRoutes from "./routes/roles";
 import logRoutes from "./routes/logs";
+import dashboardStatsRouter from "./routes/dashboardStats";
 
 dotenv.config();
 const app = express();
@@ -19,6 +20,7 @@ app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/roles", roleRoutes);
 app.use("/logs", logRoutes);
+app.use("/stats", dashboardStatsRouter);
 
 app.get("/", (_req: Request, res: Response): void => {
   res.send("API is running");

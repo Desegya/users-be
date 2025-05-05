@@ -12,7 +12,19 @@ import { ALL_PERMISSIONS, Permission } from "../utils/permissions";
 export const listRoles = async (req: Request, res: Response): Promise<void> => {
   try {
     const roles = await Role.find().lean();
-    res.json(roles);
+
+    const enhancedRoles = roles.map((role) => {
+      const permissions = role.permissions || {};
+      const permissionsCount =
+        Object.values(permissions).filter(Boolean).length;
+
+      return {
+        ...role,
+        permissionsCount,
+      };
+    });
+
+    res.json(enhancedRoles);
   } catch (err) {
     console.error("listRoles error:", err);
     res.status(500).json({ error: "Server error listing roles" });
